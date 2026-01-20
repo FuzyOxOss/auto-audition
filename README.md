@@ -51,7 +51,7 @@ Commercializing this project is prohibited and illegal.
 
 ## Results
 
-[![展示影片](https://www.youtube.com/watch?v=Nrbmp2Gn-9g)
+[[![Watch the video]]([https://youtu.be/8LAMaMY3lr8](https://youtu.be/Nrbmp2Gn-9g))
 
 ## Installation
 
