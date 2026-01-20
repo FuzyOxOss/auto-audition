@@ -1,3 +1,46 @@
+## 僅為研究用途,不完美我也沒打算繼續維護
+
+##為什麼要修復這個?
+
+我是台服囈語，一直以來我只想好好玩我的遊戲並且安靜的交朋友
+
+在26年1月12號,被質疑使用外掛，我已經給與遠端給該為質疑者及友人看，找不出任何開掛的原因
+
+但結果令人失望，我是個重鬱症患者，朋友給我的態度真的讓我死心
+
+只因我為自動化工程師 擁有Anaconda Prompt 就用AI 去給我安插一個罪名
+
+我也沒有那麼強的技術可以從頭建一個，我只好參照你問AI的方法
+
+修復一個開源的外掛，讓你知道外掛怎麼運行的
+
+
+<p align="center">
+    <img src="data/reason1.png" alt="reason 1" />
+    </br>
+    <img src="data/reason2.jpg" alt="reason 2" />
+    </br>
+    <img src="data/reason3.jpg" alt="reason 3" />
+    </br>
+    <img src="data/reason4.jpg" alt="reason 4" />
+    </br>
+    <img src="data/reason5.jpg" alt="reason 5 " />
+    </br>
+
+##如何使用?
+
+參照Installation 將環境運行好後
+
+以後只需要使用系統管理員開啟Anaconda Prompt
+
+並貼上以上指令
+
+cd "C:\Users\XXX\Desktop\auto-audition"  (請直接複製你的專案路徑)
+
+conda activate au
+
+python audition_bot.py
+
 # Auto Audition Game Hack Software
 
 Auto play Audition game by using basic image processing techniques.
@@ -9,16 +52,11 @@ Commercializing this project is prohibited and illegal.
 
 ## Results
 
-<p align="center">
-    <img src="data/example1.gif" alt="Example 1" />
-    </br>
-    <img src="data/example2.gif" alt="Example 2" />
-</p>
-
+[![Watch the video]](https://youtu.be/8LAMaMY3lr8)
 
 ## Installation
 
-1. Create environment
+1. Create environment(創建環境 貼入以下指令運行)
 
 ```bash
 conda create --name au python=3.7.7
@@ -29,16 +67,12 @@ pip install pillow
 pip install imutils
 pip install keyboard
 pip install mss
+pip install pywin32
+
 ```
 
-2. Clone `example-app.conf` and rename to `app.conf`
-
-3. Find your game PID in Task Manager and modify the `pid` item in `app.conf` file.
-
-4. Run `app.py` file with admin permission.
-    - Press `F5` button if you want to recompute the speed.
-    - Press `F6` or `F7` button if you want to adjust the perfect time.
-    - Press `backspace` to quit program
+2. Run python audition_bot.py (在Anaconda Prompt au虛擬環境下 並在專案資料夾下運行)
+    - Press `F9` button stop bot 
 
 
 ## How it works?
