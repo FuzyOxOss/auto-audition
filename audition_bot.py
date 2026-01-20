@@ -10,14 +10,17 @@ import imutils
 import random
 import ctypes
 
+# 掃描碼定義
 SCAN_CODES = {
     'up': 72, 'down': 80, 'left': 75, 'right': 77,
     '1': 79, '3': 81, '7': 71, '9': 73,  
     'ctrl': 29, 'space': 57
 }
-KEY_HOLD_TIME = 0.025  
-SAME_KEY_GAP = 0.045   
-NORMAL_KEY_GAP = 0.06 
+
+# 延遲參數
+KEY_HOLD_TIME = 0.025   
+SAME_KEY_GAP = 0.045    
+NORMAL_KEY_GAP = 0.06  
 POST_SEQUENCE_CD = 0.8  
 
 def fast_push(key_label, duration):
@@ -58,12 +61,27 @@ class FastWindowCapturer:
             return None
 
 class AuditionBot:
-
+    # 區域座標
     KEYS_ROI = (280, 540, 470, 40)
     RADAR_ROI = (420, 523, 260, 15)
     TRIGGER_POINT = 228     
     BASE_SENSITIVITY = 75   
     MIN_BALL_HEIGHT = 6     
+
+    # HSV 顏色範圍設定
+    LOWER_BLUE = np.array([100, 100, 100])
+    UPPER_BLUE = np.array([130, 255, 255])
+    # 修正後的紅色範圍 (雙段)
+    LOWER_RED1 = np.array([0, 100, 100])
+    UPPER_RED1 = np.array([10, 255, 255])
+    LOWER_RED2 = np.array([160, 100, 100])
+    UPPER_RED2 = np.array([180, 255, 255])
+
+    # 反轉對照表
+    REVERSE_MAP = {
+        "up": "down", "down": "up", "left": "right", "right": "left",
+        "7": "3", "3": "7", "9": "1", "1": "9"
+    }
 
     def __init__(self):
         self.running = True
@@ -74,8 +92,7 @@ class AuditionBot:
         
         print("="*40)
         print("    Audition Auto Bot - Perfect Mode")
-        print(f"    同鍵間隔: {SAME_KEY_GAP}s | 異鍵間隔: {NORMAL_KEY_GAP}s")
-        print("    F9: 停止    ")
+        print("    F9: 停止")
         print("="*40)
         
         keyboard.add_hotkey('f9', self.stop)
@@ -97,40 +114,62 @@ class AuditionBot:
         while self.running:
             img = cap.get_screenshot(self.KEYS_ROI)
             if img is not None and np.mean(img) > 25:
+                # 預處理
+                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 _, thres = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
+                
                 cnts = imutils.grab_contours(cv2.findContours(thres, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE))
                 bbs = sorted([cv2.boundingRect(c) for c in cnts if cv2.boundingRect(c)[2] > 15], key=lambda b: b[0])
                 
                 if bbs:
                     keys = []
+                    has_red = False
                     for bb in bbs:
+                        # 取得單個按鍵區域
                         roi_t = thres[bb[1]:bb[1]+bb[3], bb[0]:bb[0]+bb[2]]
+                        roi_hsv = hsv[bb[1]:bb[1]+bb[3], bb[0]:bb[0]+bb[2]]
                         h, w = roi_t.shape
-                        rates = [cv2.countNonZero(roi_t[:, :w//3]), cv2.countNonZero(roi_t[:h//3, :]),
-                                 cv2.countNonZero(roi_t[:, 2*w//3:]), cv2.countNonZero(roi_t[2*h//3:, :])]
+
+                        # 1. 判定顏色 (紅色反向鍵)
+                        mask_r = cv2.inRange(roi_hsv, self.LOWER_RED1, self.UPPER_RED1) + \
+                                 cv2.inRange(roi_hsv, self.LOWER_RED2, self.UPPER_RED2)
+                        mask_b = cv2.inRange(roi_hsv, self.LOWER_BLUE, self.UPPER_BLUE)
+                        
+                        is_red = cv2.countNonZero(mask_r) > cv2.countNonZero(mask_b)
+
+                        # 2. 判定方向 (四分法)
+                        rates = [
+                            cv2.countNonZero(roi_t[:, :w//3]),      # left
+                            cv2.countNonZero(roi_t[:h//3, :]),      # up
+                            cv2.countNonZero(roi_t[:, 2*w//3:]),    # right
+                            cv2.countNonZero(roi_t[2*h//3:, :])     # down
+                        ]
                         idx = np.array(rates).argsort()[::-1]
+                        
                         if rates[idx[1]] / (rates[idx[0]] + 1e-5) < 0.65:
                             res = {0: "left", 1: "up", 2: "right", 3: "down"}[idx[0]]
                         else:
                             pair = tuple(sorted((idx[0], idx[1])))
                             res = {(0,1): "7", (0,3): "1", (1,2): "9", (2,3): "3"}.get(pair, "up")
+                        
+                        # 如果是紅色，執行反向映射
+                        if is_red:
+                            res = self.REVERSE_MAP.get(res, res)
+                            has_red = True
+                            
                         keys.append(res)
                     
                     current_str = "".join(keys)
                     if current_str != last_keys_str:
-                        print(f"[KEYS] 執行: {keys}")
+                        status = "(含反轉鍵)" if has_red else ""
+                        print(f"[KEYS] 辨識: {keys} {status}")
                         
-                    
                         d_hold = 0.02 if len(keys) >= 9 else KEY_HOLD_TIME
-                        
                         prev_k = None
                         for k in keys:
-                            if k == prev_k:
-                                time.sleep(SAME_KEY_GAP)
-                            else:
-                                if NORMAL_KEY_GAP > 0: time.sleep(NORMAL_KEY_GAP)
-                            
+                            if k == prev_k: time.sleep(SAME_KEY_GAP)
+                            else: time.sleep(NORMAL_KEY_GAP)
                             fast_push(k, d_hold)
                             prev_k = k
                         
